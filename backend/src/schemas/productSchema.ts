@@ -7,3 +7,5 @@ export const createProductSchema = z.object({
     stock: z.number().int().min(0, "Stock must be greater than or equal to 0"),
     category: z.string().optional(),
 });
+
+export const updateProductSchema = createProductSchema.partial();
