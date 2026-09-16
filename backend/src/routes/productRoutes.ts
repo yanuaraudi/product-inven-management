@@ -1,5 +1,6 @@
 import { Router } from "express";
 import prisma from "../lib/prisma.js";
+import { createProductSchema } from "../schemas/productSchema.js";
 
 const router = Router();
 
@@ -28,13 +29,22 @@ router.get("/:id", async (req, res) => {
 
 // CREATE PRODUCT
 router.post("/", async (req, res) => {
+    const result = createProductSchema.safeParse(req.body);
+
+    if (!result.success) {
+        return res.status(400).json({
+            message: "Invalid request body",
+            error: result.error.flatten().fieldErrors,
+        });
+    }
+
     const product = await prisma.product.create({
         data: {
-            name: req.body.name,
-            description: req.body.description,
-            price: req.body.price,
-            stock: req.body.stock,
-            category: req.body.category,
+            name: result.data.name,
+            description: result.data.description ?? null,
+            price: result.data.price,
+            stock: result.data.stock,
+            category: result.data.category ?? null,
         },
     });
 
