@@ -8,14 +8,19 @@ import fs from "node:fs/promises";
 const router = Router();
 
 // GET ALL PRODUCTS
-router.get("/", async (req, res) => {
-    const products = await prisma.product.findMany();
-    res.json(products);
+router.get("/", async (req, res, next) => {
+    try {
+        const products = await prisma.product.findMany();
+        res.json(products);
+    } catch (error) {
+        next(error);
+    }
 });
 
 // GET PRODUCT BY ID
-router.get("/:id", async (req, res) => {
-    const product = await prisma.product.findUnique({
+router.get("/:id", async (req, res, next) => {
+    try {
+        const product = await prisma.product.findUnique({
         where: {
             id: req.params.id
         }
@@ -28,11 +33,15 @@ router.get("/:id", async (req, res) => {
     }
 
     res.json(product);
-})
+    } catch (error) {
+        next(error);
+    }
+});
 
 // CREATE PRODUCT
-router.post("/", async (req, res) => {
-    const result = createProductSchema.safeParse(req.body);
+router.post("/", async (req, res, next) => {
+    try {
+        const result = createProductSchema.safeParse(req.body);
 
     if (!result.success) {
         return res.status(400).json({
@@ -52,10 +61,13 @@ router.post("/", async (req, res) => {
     });
 
     res.status(201).json(product);
+    } catch (error) {
+        next(error);
+    }
 });
 
 // UPDATE PRODUCT
-router.patch("/:id", async (req, res) => {
+router.patch("/:id", async (req, res, next) => {
   const result = updateProductSchema.safeParse(req.body);
 
   if (!result.success) {
@@ -75,83 +87,80 @@ router.patch("/:id", async (req, res) => {
 
     res.json(product);
   } catch (error) {
-    if (error instanceof Prisma.PrismaClientKnownRequestError) {
-      if (error.code === "P2025") {
-        return res.status(404).json({
-          message: "Product not found",
-        });
-      }
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2025") {
+      return res.status(404).json({
+        message: "Product not found",
+      });
     }
-
-    return res.status(500).json({
-      message: "Internal server error",
-    });
+    next(error);
   }
 });
 
 // DELETE PRODUCT
-router.delete("/:id", async (req, res) => {
+router.delete("/:id", async (req, res, next) => {
     try {
-        await prisma.product.delete({
-            where: {
-                id: req.params.id,
-            },
+        const product = await prisma.product.delete({
+            where: { id: req.params.id, },
         });
+
+        if (product.imageUrl) {
+            const imagePath = product.imageUrl.replace("/uploads/", "uploads/");
+            await fs.unlink(imagePath).catch(() => {});
+        }
 
         return res.status(204).send();
     } catch (error) {
-        if (error instanceof Prisma.PrismaClientKnownRequestError) {
-            if (error.code === "P2025") {
-                return res.status(404).json({
-                    message: "Product not found",
-                });
-            }
+        if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2025") {
+            return res.status(404).json({ message: "Product not found" });
         }
-
-        return res.status(5000).json({
-            message: "Internal server error",
-        });
+        next(error);
     }
 });
 
 // POST UPLOAD IMAGE PRODUCT
-router.post("/:id/image", upload.single("image"), async (req, res) => {
+router.post("/:id/image", upload.single("image"), async (req, res, next) => {
     if (!req.file) {
         return res.status(400).json({
             message: "image file is required",
         });
     }
 
-    const product = await prisma.product.findUnique({
-        where: {
-            id: req.params.id as string,
-        },
-    });
-
-    if (!product) {
-        return res.status(404).json({
-            message: "Product not found",
+    try {
+        const product = await prisma.product.findUnique({
+            where: {
+                id: req.params.id as string,
+            },
         });
+
+        if (!product) {
+            await fs.unlink(req.file.path).catch(() => {});
+            return res.status(404).json({
+                message: "Product not found",
+            });
+        }
+        
+        const oldImageUrl = product.imageUrl;
+        const imageUrl = `/uploads/${req.file.filename}`;
+        const updateProduct = await prisma.product.update({
+            where: {
+                id: req.params.id as string,
+            },
+            data: {
+                imageUrl: imageUrl,
+            },
+        });
+
+        if (oldImageUrl) {
+            const oldImagePath = oldImageUrl.replace("/uploads/", "uploads/");
+
+            await fs.unlink(oldImagePath).catch(() => {});
+        }
+
+        return res.status(200).json(updateProduct);
+    } catch (error) {
+        await fs.unlink(req.file.path).catch(() => {});
+        next(error);
     }
-    
-    const oldImageUrl = product.imageUrl;
-    const imageUrl = `/uploads/${req.file.filename}`;
-    const updateProduct = await prisma.product.update({
-        where: {
-            id: req.params.id as string,
-        },
-        data: {
-            imageUrl: imageUrl,
-        },
-    });
-
-    if (oldImageUrl) {
-        const oldImagePath = oldImageUrl.replace("/uploads/", "uploads/");
-
-        await fs.unlink(oldImagePath);
-    }
-
-    return res.status(200).json(updateProduct);
 });
 
 export default router;

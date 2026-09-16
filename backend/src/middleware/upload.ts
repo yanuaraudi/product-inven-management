@@ -26,7 +26,9 @@ const upload = multer({
         if (allowedTypes.includes(file.mimetype)) {
             cb(null, true);
         } else {
-            cb(new Error("Only JPG, PNG, and WebP images are allowed"));
+            const error : any = new Error("Only JPG, PNG, and WebP images are allowed");
+            error.status = 400;
+            cb(error);
         }
     },
 });
