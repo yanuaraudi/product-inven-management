@@ -2,6 +2,8 @@ import { Router } from "express";
 import prisma from "../lib/prisma.js";
 import { Prisma } from "../generated/prisma/client.js";
 import { createProductSchema, updateProductSchema } from "../schemas/productSchema.js";
+import upload from "../middleware/upload.js";
+import fs from "node:fs/promises";
 
 const router = Router();
 
@@ -110,6 +112,46 @@ router.delete("/:id", async (req, res) => {
             message: "Internal server error",
         });
     }
+});
+
+// POST UPLOAD IMAGE PRODUCT
+router.post("/:id/image", upload.single("image"), async (req, res) => {
+    if (!req.file) {
+        return res.status(400).json({
+            message: "image file is required",
+        });
+    }
+
+    const product = await prisma.product.findUnique({
+        where: {
+            id: req.params.id as string,
+        },
+    });
+
+    if (!product) {
+        return res.status(404).json({
+            message: "Product not found",
+        });
+    }
+    
+    const oldImageUrl = product.imageUrl;
+    const imageUrl = `/uploads/${req.file.filename}`;
+    const updateProduct = await prisma.product.update({
+        where: {
+            id: req.params.id as string,
+        },
+        data: {
+            imageUrl: imageUrl,
+        },
+    });
+
+    if (oldImageUrl) {
+        const oldImagePath = oldImageUrl.replace("/uploads/", "uploads/");
+
+        await fs.unlink(oldImagePath);
+    }
+
+    return res.status(200).json(updateProduct);
 });
 
 export default router;

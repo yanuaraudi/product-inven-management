@@ -6,6 +6,7 @@ export const createProductSchema = z.object({
     price: z.number().min(0, "Price must be greater than or equal to 0"),
     stock: z.number().int().min(0, "Stock must be greater than or equal to 0"),
     category: z.string().optional(),
+    imageUrl: z.string().optional(),
 });
 
 export const updateProductSchema = createProductSchema.partial();
