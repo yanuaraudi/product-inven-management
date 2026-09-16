@@ -87,4 +87,29 @@ router.patch("/:id", async (req, res) => {
   }
 });
 
+// DELETE PRODUCT
+router.delete("/:id", async (req, res) => {
+    try {
+        await prisma.product.delete({
+            where: {
+                id: req.params.id,
+            },
+        });
+
+        return res.status(204).send();
+    } catch (error) {
+        if (error instanceof Prisma.PrismaClientKnownRequestError) {
+            if (error.code === "P2025") {
+                return res.status(404).json({
+                    message: "Product not found",
+                });
+            }
+        }
+
+        return res.status(5000).json({
+            message: "Internal server error",
+        });
+    }
+});
+
 export default router;
