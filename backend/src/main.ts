@@ -1,11 +1,13 @@
 import express from "express";
 import type { Request, Response, NextFunction } from "express";
 import productsRoute from "./routes/productRoutes.js";
+import cors from "cors";
 
 const app = express();
 
 app.use(express.json());
-app.use("/products", productsRoute);
+app.use(cors());
+app.use("/api/products", productsRoute);
 app.use("/uploads", express.static("uploads"));
 
 app.use((err: any, req: Request, res: Response, next: NextFunction) => {
