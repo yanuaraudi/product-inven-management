@@ -21,6 +21,35 @@ services:
       - "8080:80"
     depends_on:
       - mysql
+  
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: product-backend
+    environment:
+      DATABASE_HOST: mysql
+      DATABASE_PORT: 3306
+      DATABASE_USER: root
+      DATABASE_PASSWORD: ""
+      DATABASE_NAME: product_inventory
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./backend/uploads:/app/uploads
+    depends_on:
+      - mysql
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: product-frontend
+    ports:
+      - "51730:80"
+    depends_on:
+      - backend
+
 
 volumes:
   mysql_data:
