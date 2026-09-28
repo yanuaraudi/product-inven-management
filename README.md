@@ -95,7 +95,13 @@ Base URL: `http://localhost:3000/api`
 
 ### GET /products
 
-Returns all products.
+Returns all products. Supports optional category filtering via query parameter.
+
+**Query Parameters**
+
+| Parameter | Type | Description |
+|---|---|---|
+| `category` | string | Optional. Filter products by category (e.g. `Subscription`, `Physical`). |
 
 **Response `200`**
 ```json
@@ -108,6 +114,7 @@ Returns all products.
     "stock": "number",
     "category": "string | null",
     "imageUrl": "string | null",
+    "status": "string | null",
     "createdAt": "ISO 8601",
     "updatedAt": "ISO 8601"
   }
@@ -136,7 +143,9 @@ Returns all products.
   "description": "string (optional)",
   "price": "number >= 0 (required)",
   "stock": "integer >= 0 (required)",
-  "category": "string (optional)"
+  "category": "string (optional)",
+  "imageUrl": "string (optional)",
+  "status": "string (optional)"
 }
 ```
 
@@ -162,17 +171,54 @@ All fields are optional. Only provided fields are updated.
 **Request** — `Content-Type: application/json`
 ```json
 {
-  "name": "string",
-  "description": "string",
-  "price": "number >= 0",
-  "stock": "integer >= 0",
-  "category": "string"
+  "name": "string (optional)",
+  "description": "string (optional)",
+  "price": "number >= 0 (optional)",
+  "stock": "integer >= 0 (optional)",
+  "category": "string (optional)",
+  "imageUrl": "string (optional)",
+  "status": "string (optional)"
 }
 ```
 
 **Response `200`** — the updated product object.
 
 **Response `400`** — same shape as POST validation error.
+
+**Response `404`**
+```json
+{ "message": "Product not found" }
+```
+
+---
+
+### PATCH /products/stock/increment/:id
+
+Increments the stock of the specified product by 1.
+
+**Request Body** — None required.
+
+**Response `200`** — the updated product object with incremented stock.
+
+**Response `404`**
+```json
+{ "message": "Product not found" }
+```
+
+---
+
+### PATCH /products/stock/decrement/:id
+
+Decrements the stock of the specified product by 1. Stock cannot fall below 0.
+
+**Request Body** — None required.
+
+**Response `200`** — the updated product object with decremented stock.
+
+**Response `400`**
+```json
+{ "message": "Stock cannot be less than 0" }
+```
 
 **Response `404`**
 ```json
@@ -189,8 +235,6 @@ All fields are optional. Only provided fields are updated.
 ```json
 { "message": "Product not found" }
 ```
-
-> Deleting a product also removes its image file from disk if one exists.
 
 ---
 
@@ -214,7 +258,6 @@ All fields are optional. Only provided fields are updated.
 { "message": "Product not found" }
 ```
 
-> Uploading a new image automatically deletes the previous one from disk.
 
 Images are served as static files: `GET /uploads/:filename`
 
