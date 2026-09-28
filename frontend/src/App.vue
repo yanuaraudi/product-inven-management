@@ -14,6 +14,7 @@ type Product = {
     imageUrl: string | null
     createdAt: string
     updatedAt: string
+    status: string | null
 }
 
 const selectedProduct = ref<Product | null>(null)

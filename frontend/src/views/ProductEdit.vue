@@ -11,6 +11,7 @@ type Product = {
     imageUrl: string | null
     createdAt: string
     updatedAt: string
+    status: string | null
 }
 
 const props = defineProps<{
@@ -27,6 +28,7 @@ const price = ref(0)
 const stock = ref(0)
 const category = ref('')
 const image = ref<File | null>(null)
+const status = ref('')
 
 const loading = ref(false)
 const error = ref<string | null>(null)
@@ -81,6 +83,7 @@ async function updateProduct() {
         price: price.value,
         stock: stock.value,
         category: category.value,
+        status: status.value,
     }
 
     try {
@@ -145,6 +148,7 @@ watch(
         category.value = product.category ?? ''
 
         image.value = null
+        status.value = product.status ?? ''
 
         imagePreview.value = product.imageUrl
             ? `http://localhost:3000${product.imageUrl}`
@@ -246,6 +250,18 @@ watch(
                     <input
                         id="edit-category"
                         v-model="category"
+                        type="text"
+                        class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-gray-500 focus:ring-1 focus:ring-gray-300"
+                    />
+                </div>
+
+                 <div>
+                    <label for="edit-status" class="mb-1 block text-sm font-medium text-gray-700">
+                        Status
+                    </label>
+                    <input
+                        id="edit-status"
+                        v-model="status"
                         type="text"
                         class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-gray-500 focus:ring-1 focus:ring-gray-300"
                     />

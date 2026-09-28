@@ -10,7 +10,11 @@ const router = Router();
 // GET ALL PRODUCTS
 router.get("/", async (req, res, next) => {
     try {
-        const products = await prisma.product.findMany();
+        const products = await prisma.product.findMany({
+          where: {
+            ...(req.query.category ? { category: req.query.category as string } : {}),
+          }
+        });
         res.json(products);
     } catch (error) {
         next(error);
@@ -57,6 +61,7 @@ router.post("/", async (req, res, next) => {
             price: result.data.price,
             stock: result.data.stock,
             category: result.data.category ?? null,
+            status: result.data.status ?? null,
         },
     });
 
@@ -95,6 +100,75 @@ router.patch("/:id", async (req, res, next) => {
     next(error);
   }
 });
+
+// INCREMENT STOCK PRODUCT
+router.patch("/stock/increment/:id", async (req, res, next) => {
+  try {
+        const product = await prisma.product.findUnique({
+        where: {
+            id: req.params.id
+        }
+    });
+
+    if (!product) {
+        return res.status(404).json({
+            message: "Product not found"
+        });
+    }
+
+    const stock = product.stock + 1;
+
+    const updateProduct = await prisma.product.update({
+      where: {
+        id: req.params.id,
+      },
+      data: {
+        stock: stock
+      },
+    });
+     res.json(updateProduct);
+    } catch (error) {
+        next(error);
+    }
+})
+
+// DECREMENT STOCK PRODUCT
+router.patch("/stock/decrement/:id", async (req, res, next) => {
+  try {
+        const product = await prisma.product.findUnique({
+        where: {
+            id: req.params.id
+        }
+    });
+
+    if (!product) {
+        return res.status(404).json({
+            message: "Product not found"
+        });
+    }
+
+    if(product.stock <= 0) {
+      return res.status(400).json({
+        message: "Stock cannot be less than 0"
+      });
+    }
+
+    const stock = product.stock - 1;
+
+    const updateProduct = await prisma.product.update({
+      where: {
+        id: req.params.id,
+      },
+      data: {
+        stock: stock
+      },
+    });
+     res.json(updateProduct);
+    } catch (error) {
+        next(error);
+    }
+})
+
 
 // DELETE PRODUCT
 router.delete("/:id", async (req, res, next) => {

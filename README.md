@@ -89,14 +89,132 @@ Frontend runs on `http://localhost:51730`.
 
 ## API Endpoints
 
-| Method | Endpoint | Description |
-|---|---|---|
-| GET | `/api/products` | List all products |
-| GET | `/api/products/:id` | Get a single product |
-| POST | `/api/products` | Create a product |
-| PATCH | `/api/products/:id` | Update a product |
-| DELETE | `/api/products/:id` | Delete a product |
-| POST | `/api/products/:id/image` | Upload/replace product image |
+Base URL: `http://localhost:3000/api`
 
-Images are served as static files from `/uploads/:filename`.
+---
+
+### GET /products
+
+Returns all products.
+
+**Response `200`**
+```json
+[
+  {
+    "id": "cuid",
+    "name": "string",
+    "description": "string | null",
+    "price": "string (decimal)",
+    "stock": "number",
+    "category": "string | null",
+    "imageUrl": "string | null",
+    "createdAt": "ISO 8601",
+    "updatedAt": "ISO 8601"
+  }
+]
+```
+
+---
+
+### GET /products/:id
+
+**Response `200`** — same shape as a single item above.
+
+**Response `404`**
+```json
+{ "message": "Product not found" }
+```
+
+---
+
+### POST /products
+
+**Request** — `Content-Type: application/json`
+```json
+{
+  "name": "string (required)",
+  "description": "string (optional)",
+  "price": "number >= 0 (required)",
+  "stock": "integer >= 0 (required)",
+  "category": "string (optional)"
+}
+```
+
+**Response `201`** — the created product object.
+
+**Response `400`**
+```json
+{
+  "message": "Invalid request body",
+  "error": {
+    "name": ["Name is required"],
+    "price": ["Price must be greater than or equal to 0"]
+  }
+}
+```
+
+---
+
+### PATCH /products/:id
+
+All fields are optional. Only provided fields are updated.
+
+**Request** — `Content-Type: application/json`
+```json
+{
+  "name": "string",
+  "description": "string",
+  "price": "number >= 0",
+  "stock": "integer >= 0",
+  "category": "string"
+}
+```
+
+**Response `200`** — the updated product object.
+
+**Response `400`** — same shape as POST validation error.
+
+**Response `404`**
+```json
+{ "message": "Product not found" }
+```
+
+---
+
+### DELETE /products/:id
+
+**Response `204`** — no body.
+
+**Response `404`**
+```json
+{ "message": "Product not found" }
+```
+
+> Deleting a product also removes its image file from disk if one exists.
+
+---
+
+### POST /products/:id/image
+
+**Request** — `Content-Type: multipart/form-data`
+
+| Field | Type | Notes |
+|---|---|---|
+| `image` | file | Required. JPG, PNG, or WebP. Max 5 MB. |
+
+**Response `200`** — the updated product object with the new `imageUrl`.
+
+**Response `400`**
+```json
+{ "message": "image file is required" }
+```
+
+**Response `404`**
+```json
+{ "message": "Product not found" }
+```
+
+> Uploading a new image automatically deletes the previous one from disk.
+
+Images are served as static files: `GET /uploads/:filename`
 

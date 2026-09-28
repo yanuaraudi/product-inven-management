@@ -17,21 +17,20 @@ type Product = {
 const products = ref<Product[]>([])
 const loading = ref(false)
 const error = ref<string | null>(null)
-const filter = ref('')
+const category = 'Subscription'
 const productToDelete = ref<Product | null>(null)
-const BASE_URL = 'http://localhost:3000'
+
 
 const emit = defineEmits<{
     edit: [product: Product]
 }>()
 
-async function fetchProducts(category = filter.value) {
+async function fetchProductsByCategory(category: string) {
     loading.value = true
     error.value = null
+
     try {
-        const url = new URL(`${BASE_URL}/api/products`)
-        if (category) url.searchParams.set('category', category)
-        const response = await fetch(url.toString())
+        const response = await fetch(`http://localhost:3000/api/products/category/${category}`)
 
         if (!response.ok) {
             throw new Error('Failed to fetch products')
@@ -47,12 +46,10 @@ async function fetchProducts(category = filter.value) {
     }
 }
 
-function handleFilterChange() {
-    fetchProducts()
-}
+
 
 onMounted(() => {
-    fetchProducts()
+    fetchProductsByCategory(category)
 })
 
 function editProduct(product: Product) {
@@ -92,7 +89,7 @@ async function executeDelete() {
             throw new Error('Failed to delete product')
         }
 
-        await fetchProducts()
+        await fetchProductsByCategory(category)
     } catch (err) {
         console.error(err)
         error.value = 'Failed to delete product.'
@@ -102,21 +99,8 @@ async function executeDelete() {
 
 <template>
     <section>
-        <div class="mb-6 flex items-center justify-between">
+        <div class="mb-6">
             <h2 class="text-xl font-semibold">Products</h2>
-            <div class="flex items-center gap-2">
-                <label for="category-filter" class="text-sm font-medium text-gray-700">Category:</label>
-                <select
-                    id="category-filter"
-                    v-model="filter"
-                    class="rounded-lg border border-gray-300 px-3 py-1.5 text-sm text-gray-700 focus:border-gray-900 focus:outline-none"
-                    @change="handleFilterChange"
-                >
-                    <option value="">All categories</option>
-                    <option value="Subscription">Subscription</option>
-                    <option value="Physical">Physical</option>
-                </select>
-            </div>
         </div>
 
         <div
